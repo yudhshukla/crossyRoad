@@ -1,0 +1,40 @@
+Strategy: I used Gemini Pro and cmu_graphics. I incrementally told it more features to add, starting with a basic 2D version of the game that allows for movement in all directions and two different terrains. Then, I told it to make a more beautiful UI and add additional aesthetic features. The last update was to 3D-ify the game. 
+
+
+I need to make a replica of crossy road in python in one hour using cmu_graphics. We can start with a 2D version which allows for forward and left right movement like the original game, different terrains like roads and rivers (where the logs move when you're on them), and add features on as we go. Can you provide me with the necessary files and code I need for this?
+
+This is great! for some next features, can we add more detailed terrain (trees on the grass, waves in the water), coins to collect, a score, and a hopping animation on the player?
+
+Yes, could you add the squish for the game over if it hits a car, or a splash in the water if it misses a log? also the coins and score are not readable and look kind of ugly, can you fix that by using a different color, font and positioning?
+
+This looks good. Can we make the waves in the water and the trees more detailed/beautiful? Also, can you add a train terrain modeled after the original game as well, where it speeds past you when the crossing indicates?
+
+Can you add more detail to the trains and cars so they look more realistic, and a crossing sign/light to indicate when the train is coming. Also, when the player gets squished, make it get squished vertically, not horizontally (since that's more accurate). In both cases, when it gets squished/splashed, can you add particles that shoot everywhere?
+
+The splatter animations are great! however, I still dont see a train crossing indication, can you please add that?
+
+Great! I see it now. next, can you fix the car animation? the wheels look very awkward and not realistic since they're protruding from both sides of the shape. Also, the lanes don't make sense, since the white dashed lines are on the edges. There should be a white dashed edge on the middle and a double yellow dashed edge when multiple roads meet.
+
+Awesome, this version looks perfect! Now, can you take the first step to 3difying this? Use what we have so far as a foundation
+
+Good try, but there a few issues as you can see in the image [image attached]. 
+1. The right face is not being drawn at all for any of the shapes
+2. The world looks finite (can see empty blue), can we make it fill the whole screen like crossy road does?
+3. The controls seem a little unintuitive, can we flip the world so im moving up into the road/river like crossy road
+4. I'm able to run into trees! 
+
+This is completely messed up [image attached]. Please go back to the previous version (the first attempt at 3D) and try to go from there. 
+
+Let's remove all these triangles that are being drawn, its slowing things down a lot. additionally, the cars seem to be being drawn in the the reverse order
+
+The logs, cars, and trains are being drawn in the opposite orientation. They are rotated. Please fix this, and refer to the file I attached that uses pythonRound
+
+This looks better, the orientation is now correct. Can we readd the crossing sign for the trains, fix the fact that some of the faces of all the shapes (the player, logs, trains, cars) aren't there (look at the image) [image attached]
+
+This looks great! One thing is that it looks like sprite appears to be one row behind where it actually is. Look at the image [image attached]; it got squished when it looks like it was on the green row
+
+
+
+
+
+
