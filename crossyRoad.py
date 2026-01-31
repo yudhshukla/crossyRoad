@@ -3,6 +3,15 @@ import random
 import math
 
 # ==========================================
+# HELPER FUNCTIONS
+# ==========================================
+
+def pythonRound(n):
+    # Standard rounding for grid collisions
+    if n >= 0: return int(n + 0.5)
+    else: return int(n - 0.5)
+
+# ==========================================
 # MODEL
 # ==========================================
 
@@ -126,7 +135,6 @@ def onKeyPress(app, key):
     
     targetLane = app.lanes.get(newRow)
     
-    # Use standard round() 
     if targetLane and pythonRound(newCol) in targetLane.trees:
         return 
 
@@ -159,6 +167,7 @@ def onStep(app):
     for rowIdx in app.lanes:
         lane = app.lanes[rowIdx]
         
+        # Train Logic
         if lane.type == 'train':
             lane.trainTimer -= 1
             if lane.trainState == 'IDLE':
@@ -177,10 +186,10 @@ def onStep(app):
                     lane.trainState = 'IDLE'
                     lane.trainTimer = random.randint(200, 500)
                     
+        # Move Obstacles
         if lane.type != 'grass':
             for obs in lane.obstacles:
                 obs[0] += lane.speed * lane.direction
-                # Infinite wrap around
                 if lane.direction == 1 and obs[0] > app.cols + 10:
                     obs[0] = -obs[1] - 10
                 elif lane.direction == -1 and obs[0] < -obs[1] - 10:
@@ -231,7 +240,8 @@ def triggerGameOver(app, type):
     createParticles(app, type)
 
 def createParticles(app, type):
-    sx, sy = getIsoScreenPos(app, app.playerRow, app.playerCol, 0)
+    # Offset row by 0.2 to match player render position
+    sx, sy = getIsoScreenPos(app, app.playerRow + 0.2, app.playerCol, 0)
     colors = ['red', 'orange', 'white'] if type == 'squished' else ['white', 'cyan', 'blue']
     for _ in range(30):
         angle = random.uniform(0, 2*math.pi)
@@ -252,7 +262,7 @@ def updateParticles(app):
     app.particles = [p for p in app.particles if p[5] > 0]
 
 # ==========================================
-# VIEW: ISOMETRIC ENGINE (OPTIMIZED)
+# VIEW: ISOMETRIC ENGINE
 # ==========================================
 
 def getIsoScreenPos(app, row, col, zHeight):
@@ -278,18 +288,17 @@ def drawIsoBlock(app, row, col, z, width, depth, height, color, topColor=None):
     tx3, ty3 = bx3, by3 - height
     tx4, ty4 = bx4, by4 - height
     
-    # Faces
-    # Left
-    drawPolygon(bx4, by4, bx3, by3, tx3, ty3, tx4, ty4, fill=color, opacity=90, border=None)
-    # Right
-    drawPolygon(bx3, by3, bx2, by2, tx2, ty2, tx3, ty3, fill=color, opacity=70, border=None)
-    # Top
+    # Visible Faces (Left, Front, Top)
+    # Left Face
+    drawPolygon(bx4, by4, bx1, by1, tx1, ty1, tx4, ty4, fill=color, opacity=90, border=None)
+    # Front Face
+    drawPolygon(bx1, by1, bx2, by2, tx2, ty2, tx1, ty1, fill=color, opacity=100, border=None)
+    # Top Face
     drawPolygon(tx1, ty1, tx2, ty2, tx3, ty3, tx4, ty4, fill=topColor, border=None)
 
 def redrawAll(app):
     drawRect(0, 0, app.width, app.height, fill='lightSkyBlue')
     
-    # Draw Far lanes first (High Row to Low Row)
     startRow = int(app.camRow) + 15
     endRow = int(app.camRow) - 10
     
@@ -297,7 +306,7 @@ def redrawAll(app):
         if r in app.lanes:
             drawIsoLane(app, r, app.lanes[r])
             
-    # Draw Player (If not hidden by death)
+    # Draw Player
     if not app.gameOver or app.deathType != 'splashed':
         pz = 0
         if app.hopTimer > 0: pz = 15 * math.sin(app.hopTimer * 0.6)
@@ -306,12 +315,14 @@ def redrawAll(app):
             h = 4
             pz = 0
         
-        drawIsoBlock(app, app.playerRow, app.playerCol, 0, 0.6, 0.6, h, 'lightGray', app.playerColor)
+        # FIX: Draw player slightly offset (0.2) into the lane so they aren't obscured
+        # by the previous lane's height
+        drawIsoBlock(app, app.playerRow + 0.2, app.playerCol, 0, 0.6, 0.6, h, 'lightGray', app.playerColor)
         
         # Eyes
-        sx, sy = getIsoScreenPos(app, app.playerRow + 0.6, app.playerCol + 0.2, pz + h - 5)
+        sx, sy = getIsoScreenPos(app, app.playerRow + 0.8, app.playerCol + 0.2, pz + h - 5)
         drawCircle(sx, sy, 2, fill='black')
-        sx, sy = getIsoScreenPos(app, app.playerRow + 0.6, app.playerCol + 0.4, pz + h - 6)
+        sx, sy = getIsoScreenPos(app, app.playerRow + 0.8, app.playerCol + 0.4, pz + h - 6)
         drawCircle(sx, sy, 2, fill='black')
 
     for p in app.particles:
@@ -323,9 +334,6 @@ def redrawAll(app):
         drawLabel("GAME OVER", app.width/2, app.height/2, size=40, bold=True, fill='red', border='white')
 
 def drawIsoLane(app, r, lane):
-    # OPTIMIZATION: Draw ground as one big strip instead of many small squares
-    
-    # Calculate visible range shifts based on row
     shift = int(r)
     colStart = shift - 15
     colEnd = shift + 15
@@ -333,12 +341,12 @@ def drawIsoLane(app, r, lane):
     
     color = 'mediumSeaGreen'
     topC = 'lightGreen'
-    h = 15
+    h = 12 # FIX: Standardize height to avoid occlusion issues
     
     if lane.type == 'road': 
         color = 'dimGray'
         topC = 'gray'
-        h = 10
+        h = 12
     elif lane.type == 'river': 
         color = 'royalBlue'
         topC = 'cornflowerBlue'
@@ -348,22 +356,15 @@ def drawIsoLane(app, r, lane):
         topC = 'darkGray'
         h = 12
 
-    # Draw ONE big block for the ground
+    # Ground
     drawIsoBlock(app, r, colStart, 0, width, 1.0, h, color, topC)
     
-    # Road markings (simplified to lines for speed)
     if lane.type == 'road':
         sx1, sy1 = getIsoScreenPos(app, r, colStart, h)
         sx2, sy2 = getIsoScreenPos(app, r, colEnd, h)
-        # Offset slightly for center
         drawLine(sx1, sy1, sx2, sy2, fill='white', opacity=30, dashes=True)
 
-    # --- OBJECTS ---
-    # Sort objects by column DESCENDING (Back-to-Front painter's algo)
-    # High Column = Top-Right of screen (Background)
-    # Low Column = Bottom-Left of screen (Foreground)
-    
-    # Collect all renderables in this lane
+    # --- RENDER OBJECTS ---
     renderList = []
     
     for tCol in lane.trees:
@@ -375,7 +376,10 @@ def drawIsoLane(app, r, lane):
         if colStart < c < colEnd:
             renderList.append({'type':'obs', 'col':c, 'data':obs})
             
-    # SORT: High column (Back) -> Low column (Front)
+    if lane.type == 'train':
+        signCol = shift + 4 
+        renderList.append({'type':'sign', 'col':signCol})
+
     renderList.sort(key=lambda x: x['col'], reverse=True)
     
     for item in renderList:
@@ -383,6 +387,18 @@ def drawIsoLane(app, r, lane):
             tCol = item['col']
             drawIsoBlock(app, r + 0.3, tCol + 0.3, 15, 0.4, 0.4, 15, 'saddleBrown')
             drawIsoBlock(app, r + 0.1, tCol + 0.1, 30, 0.8, 0.8, 20, 'darkGreen', 'forestGreen')
+        
+        elif item['type'] == 'sign':
+            sCol = item['col']
+            drawIsoBlock(app, r + 0.4, sCol + 0.4, 12, 0.2, 0.2, 35, 'silver')
+            drawIsoBlock(app, r + 0.4, sCol + 0.1, 40, 0.8, 0.2, 10, 'black')
+            lightColor = 'darkRed'
+            if lane.trainState in ['WARNING', 'PASSING'] and (app.gameTimer // 5) % 2 == 0:
+                lightColor = 'red'
+            lx, ly = getIsoScreenPos(app, r + 0.4, sCol + 0.3, 45)
+            drawCircle(lx, ly, 3, fill=lightColor)
+            lx, ly = getIsoScreenPos(app, r + 0.4, sCol + 0.7, 45)
+            drawCircle(lx, ly, 3, fill=lightColor)
             
         elif item['type'] == 'obs':
             c = item['col']
@@ -390,15 +406,17 @@ def drawIsoLane(app, r, lane):
             w, color = obs[1], obs[2]
             
             if lane.type == 'road': 
-                drawIsoBlock(app, r + 0.2, c, 10, 0.6, w, 12, 'black', color)
-                drawIsoBlock(app, r + 0.3, c + 0.2, 22, 0.4, w - 0.4, 6, color, 'lightBlue')
+                # FIX: Rotated orientation (width vs depth)
+                drawIsoBlock(app, r + 0.2, c, 10, w, 0.6, 12, 'black', color)
+                drawIsoBlock(app, r + 0.3, c + 0.2, 22, w - 0.4, 0.4, 6, color, 'lightBlue')
             elif lane.type == 'river': 
-                drawIsoBlock(app, r + 0.2, c, 2, 0.6, w, 6, 'saddleBrown', 'sienna')
+                drawIsoBlock(app, r + 0.2, c, 2, w, 0.6, 6, 'saddleBrown', 'sienna')
 
     if lane.type == 'train':
         if lane.trainState == 'PASSING':
             tx = lane.trainX
-            drawIsoBlock(app, r + 0.1, tx, 12, 0.8, 10, 20, 'darkRed', 'crimson')
+            # FIX: Rotated orientation
+            drawIsoBlock(app, r + 0.1, tx, 12, 10, 0.8, 20, 'darkRed', 'crimson')
             sx, sy = getIsoScreenPos(app, r, tx, 35)
             drawCircle(sx, sy - (app.gameTimer % 20), 5 + (app.gameTimer%10), fill='gray', opacity=50)
 
